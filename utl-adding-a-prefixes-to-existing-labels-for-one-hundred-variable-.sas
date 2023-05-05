@@ -7,6 +7,17 @@ Problem
    Add the prefix NUM to all existing labels for varables that beging with NUM
    Add the prefix VAR to all existing labels for varables that beging with VAR
 
+ Three Solutions
+      1. Roger macro
+
+      2  Mark native code
+         Mark Keintz
+         mkeintz@outlook.com
+
+      3  Bart native code
+         Bartosz Jablonski
+         yabwon@gmail.com
+
 github
 https://tinyurl.com/yes7wn74
 https://github.com/rogerjdeangelis/utl-adding-a-prefixes-to-existing-labels-for-one-hundred-variable-
@@ -63,13 +74,15 @@ run;quit;
 /*  98    NUM20       Num       8    other label           |      NUM  other label                                        */
 /*                                                                                                                        */
 /**************************************************************************************************************************/
- /*           _               _
-  ___  _   _| |_ _ __  _   _| |_
- / _ \| | | | __| `_ \| | | | __|
-| (_) | |_| | |_| |_) | |_| | |_
- \___/ \__,_|\__| .__/ \__,_|\__|
-                |_|
+
+/*
+ _ __ ___   __ _  ___ _ __   _ __ ___   __ _  ___ _ __ ___
+| `__/ _ \ / _` |/ _ \ `__| | `_ ` _ \ / _` |/ __| `__/ _ \
+| | | (_) | (_| |  __/ |    | | | | | | (_| | (__| | | (_) |
+|_|  \___/ \__, |\___|_|    |_| |_| |_|\__,_|\___|_|  \___/
+           |___/
 */
+
 /**************************************************************************************************************************/
 /*                                                                                                                        */
 /*              Variables in Creation Order                                                                               */
@@ -139,7 +152,7 @@ run;quit;
 /**************************************************************************************************************************/
 
 /*---- use the label dataset to apply the new labels         ----*/
-/*---- this is very redable
+/*---- this is very redable                                  ----*/
 %array(_nam _lbl,data=havlbl,var=NAM LBL);
 
 proc datasets nolist nodetails;
@@ -187,6 +200,83 @@ run;quit;
 /*                                                                                                                        */
 /**************************************************************************************************************************/
 
+/*                    _                  _   _                           _
+ _ __ ___   __ _ _ __| | __  _ __   __ _| |_(_)_   _____    ___ ___   __| | ___
+| `_ ` _ \ / _` | `__| |/ / | `_ \ / _` | __| \ \ / / _ \  / __/ _ \ / _` |/ _ \
+| | | | | | (_| | |  |   <  | | | | (_| | |_| |\ V /  __/ | (_| (_) | (_| |  __/
+|_| |_| |_|\__,_|_|  |_|\_\ |_| |_|\__,_|\__|_| \_/ \___|  \___\___/ \__,_|\___|
+
+*/
+
+/*---- best solution uses natice SAS ----*/
+
+/*---- Mark Keintz                   ----*/
+/*---- mkeintz@outlook.com           ----*/
+
+options validvarname=upcase;
+
+filename tmp temp;
+
+data _null_;
+  if 0 then set have;
+  length _vname $32 _vnam3 $3 _text $200;
+  file tmp;
+  do until (_vname='_VNAME');
+    call vnext(_vname);
+    _vnam3=upcase(_vname);
+    if _vnam3 in ('NUM','VAR') then do;
+      _text=cats(_vname,'="',_vnam3,catx(' ',':',vlabelx(_vname)),'"');
+      put +3 _text;
+    end;
+  end;
+  stop;
+run;quit;
+
+proc datasets lib=work nolist;
+  modify have ;
+  label
+   %include tmp / source2 ;
+  ;
+  run;
+quit;
+
+/*                _                 _   _                           _
+| |__   __ _ _ __| |_   _ __   __ _| |_(_)_   _____    ___ ___   __| | ___
+| `_ \ / _` | `__| __| | `_ \ / _` | __| \ \ / / _ \  / __/ _ \ / _` |/ _ \
+| |_) | (_| | |  | |_  | | | | (_| | |_| |\ V /  __/ | (_| (_) | (_| |  __/
+|_.__/ \__,_|_|   \__| |_| |_|\__,_|\__|_| \_/ \___|  \___\___/ \__,_|\___|
+
+*/
+
+/*---- Bartosz Jablonski ----*/
+/*---- yabwon@gmail.com  ----*/
+
+data ;
+  retain var1 - var78 "abc" num1 - num20 0 A B C D E F G "xxx";
+  ATTRIB
+    var1 -- var78 label= "some label"
+    num1 -- num20 label= "other lable"
+    A -- G        label= 'different variables'
+  ;
+run;
+
+proc transpose data=have(obs=0) out=temp;
+  var var: num:;
+run;
+data _null_;
+  call execute('
+    proc datasets nolist lib=work;
+      modify have ;
+        label');
+  do until(eof);
+    set temp end=eof;
+    call execute(cat(_NAME_,"='",substr(_NAME_,1,3)," ",_LABEL_,"'"));
+  end;
+
+  call execute(';run;quit;');
+stop;
+run;
+
 /*              _
   ___ _ __   __| |
  / _ \ `_ \ / _` |
@@ -194,6 +284,3 @@ run;quit;
  \___|_| |_|\__,_|
 
 */
-
-
-     ;;;;%end;%mend;/*'*/ *);*};*];*/;/*"*/;run;quit;%end;end;run;endcomp;%utlfix;
